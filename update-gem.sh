@@ -1,14 +1,14 @@
 #! /bin/sh
 
 # clean old version
-rm -rf vendor
-mkdir -p vendor/assets/javascripts/vendor vendor/assets/stylesheets
+##rm -rf vendor
+##mkdir -p vendor/assets/javascripts/vendor vendor/assets/stylesheets
 
 # update assets
-bower install
-cp bower_components/modernizr/modernizr.js vendor/assets/javascripts/vendor/.
-cp -R bower_components/foundation/js/foundation/ vendor/assets/javascripts/foundation/
-cp -R bower_components/foundation/scss/* vendor/assets/stylesheets/
+##bower install
+##cp bower_components/modernizr/modernizr.js vendor/assets/javascripts/vendor/.
+##cp -R bower_components/foundation/js/foundation/ vendor/assets/javascripts/foundation/
+##cp -R bower_components/foundation/scss/* vendor/assets/stylesheets/
 
 # create vendor/assets/javascripts/foundation.js (rails inclusions //=require foundation, ...)
 cd vendor/assets/javascripts
