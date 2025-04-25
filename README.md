@@ -2,6 +2,10 @@
 
 Foundation::Rails is a gem to make it super easy to use Foundation in your upcoming Rails project. You can start using Foundation::Rails in your projects by following the instructions below.
 
+## This fork
+
+This fork (adamtao/foundation5-rails) aims to use the final release of Foundation 5 while keeping up with 3rd party dependencies and fixing bugs within Foundation 5.
+
 ## Installation
 
 Add this line to your application's Gemfile:
