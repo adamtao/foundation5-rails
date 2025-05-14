@@ -1,7 +1,7 @@
 /*
  * Foundation Responsive Library
  * http://foundation.zurb.com
- * Copyright 2015, ZURB
+ * Copyright 2014, ZURB
  * Free to use under the MIT license.
  * http://www.opensource.org/licenses/mit-license.php
 */
@@ -10,12 +10,14 @@
   'use strict';
 
   var header_helpers = function (class_array) {
+    var i = class_array.length;
     var head = $('head');
-    head.prepend($.map(class_array, function (class_name) {
-      if (head.has('.' + class_name).length === 0) {
-        return '<meta class="' + class_name + '" />';
+
+    while (i--) {
+      if(head.has('.' + class_array[i]).length === 0) {
+        head.append('<meta class="' + class_array[i] + '" />');
       }
-    }));
+    }
   };
 
   header_helpers([
@@ -32,7 +34,7 @@
 
   // Enable FastClick if present
 
-  $(function () {
+  $(function() {
     if (typeof FastClick !== 'undefined') {
       // Don't attach to body if undefined
       if (typeof document.body !== 'undefined') {
@@ -50,9 +52,7 @@
         var cont;
         if (context.jquery) {
           cont = context[0];
-          if (!cont) {
-            return context;
-          }
+          if (!cont) return context;
         } else {
           cont = context;
         }
@@ -69,12 +69,8 @@
 
   var attr_name = function (init) {
     var arr = [];
-    if (!init) {
-      arr.push('data');
-    }
-    if (this.namespace.length > 0) {
-      arr.push(this.namespace);
-    }
+    if (!init) arr.push('data');
+    if (this.namespace.length > 0) arr.push(this.namespace);
     arr.push(this.name);
 
     return arr.join('-');
@@ -104,20 +100,24 @@
 
   var bindings = function (method, options) {
     var self = this,
-        bind = function(){
-          var $this = S(this),
-              should_bind_events = !$this.data(self.attr_name(true) + '-init');
-          $this.data(self.attr_name(true) + '-init', $.extend({}, self.settings, (options || method), self.data_options($this)));
-
-          if (should_bind_events) {
-            self.events(this);
-          }
-        };
+        should_bind_events = !S(this).data(this.attr_name(true));
 
     if (S(this.scope).is('[' + this.attr_name() +']')) {
-      bind.call(this.scope);
+      S(this.scope).data(this.attr_name(true) + '-init', $.extend({}, this.settings, (options || method), this.data_options(S(this.scope))));
+
+      if (should_bind_events) {
+        this.events(this.scope);
+      }
+
     } else {
-      S('[' + this.attr_name() +']', this.scope).each(bind);
+      S('[' + this.attr_name() +']', this.scope).each(function () {
+        var should_bind_events = !S(this).data(self.attr_name(true) + '-init');
+        S(this).data(self.attr_name(true) + '-init', $.extend({}, self.settings, (options || method), self.data_options(S(this))));
+
+        if (should_bind_events) {
+          self.events(this);
+        }
+      });
     }
     // # Patch to fix #5043 to move this *after* the if/else clause in order for Backbone and similar frameworks to have improved control over event binding and data-options updating.
     if (typeof method === 'string') {
@@ -155,52 +155,42 @@
     }
   };
 
-  /*! matchMedia() polyfill - Test a CSS media type/query in JS. Authors & copyright (c) 2012: Scott Jehl, Paul Irish, Nicholas Zakas, David Knight. Dual MIT/BSD license */
+  /*
+    https://github.com/paulirish/matchMedia.js
+  */
 
-  window.matchMedia || (window.matchMedia = function() {
-      "use strict";
+  window.matchMedia = window.matchMedia || (function( doc ) {
 
-      // For browsers that support matchMedium api such as IE 9 and webkit
-      var styleMedia = (window.styleMedia || window.media);
+    'use strict';
 
-      // For those that don't support matchMedium
-      if (!styleMedia) {
-          var style       = document.createElement('style'),
-              script      = document.getElementsByTagName('script')[0],
-              info        = null;
+    var bool,
+        docElem = doc.documentElement,
+        refNode = docElem.firstElementChild || docElem.firstChild,
+        // fakeBody required for <FF4 when executed in <head>
+        fakeBody = doc.createElement( 'body' ),
+        div = doc.createElement( 'div' );
 
-          style.type  = 'text/css';
-          style.id    = 'matchmediajs-test';
+    div.id = 'mq-test-1';
+    div.style.cssText = 'position:absolute;top:-100em';
+    fakeBody.style.background = 'none';
+    fakeBody.appendChild(div);
 
-          script.parentNode.insertBefore(style, script);
+    return function (q) {
 
-          // 'style.currentStyle' is used by IE <= 8 and 'window.getComputedStyle' for all other browsers
-          info = ('getComputedStyle' in window) && window.getComputedStyle(style, null) || style.currentStyle;
+      div.innerHTML = '&shy;<style media="' + q + '"> #mq-test-1 { width: 42px; }</style>';
 
-          styleMedia = {
-              matchMedium: function(media) {
-                  var text = '@media ' + media + '{ #matchmediajs-test { width: 1px; } }';
+      docElem.insertBefore( fakeBody, refNode );
+      bool = div.offsetWidth === 42;
+      docElem.removeChild( fakeBody );
 
-                  // 'style.styleSheet' is used by IE <= 8 and 'style.textContent' for all other browsers
-                  if (style.styleSheet) {
-                      style.styleSheet.cssText = text;
-                  } else {
-                      style.textContent = text;
-                  }
-
-                  // Test if media query is true or false
-                  return info.width === '1px';
-              }
-          };
-      }
-
-      return function(media) {
-          return {
-              matches: styleMedia.matchMedium(media || 'all'),
-              media: media || 'all'
-          };
+      return {
+        matches: bool,
+        media: q
       };
-  }());
+
+    };
+
+  }( document ));
 
   /*
    * jquery.requestAnimationFrame
@@ -211,8 +201,7 @@
    * Licensed under the MIT license.
    */
 
-  (function(jQuery) {
-
+  (function($) {
 
   // requestAnimationFrame polyfill adapted from Erik Möller
   // fixes from Paul Irish and Tino Zijdel
@@ -278,7 +267,8 @@
 
   }
 
-  }( $ ));
+  }( jQuery ));
+
 
   function removeQuotes (string) {
     if (typeof string === 'string' || string instanceof String) {
@@ -288,36 +278,27 @@
     return string;
   }
 
-  function MediaQuery(selector) {
-    this.selector = selector;
-    this.query = '';
-  }
-
-  MediaQuery.prototype.toString = function () {
-    return this.query || (this.query = S(this.selector).css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, ''));
-  };
-
   window.Foundation = {
     name : 'Foundation',
 
-    version : '5.5.3',
+    version : '5.5.0',
 
     media_queries : {
-      'small'       : new MediaQuery('.foundation-mq-small'),
-      'small-only'  : new MediaQuery('.foundation-mq-small-only'),
-      'medium'      : new MediaQuery('.foundation-mq-medium'),
-      'medium-only' : new MediaQuery('.foundation-mq-medium-only'),
-      'large'       : new MediaQuery('.foundation-mq-large'),
-      'large-only'  : new MediaQuery('.foundation-mq-large-only'),
-      'xlarge'      : new MediaQuery('.foundation-mq-xlarge'),
-      'xlarge-only' : new MediaQuery('.foundation-mq-xlarge-only'),
-      'xxlarge'     : new MediaQuery('.foundation-mq-xxlarge')
+      'small'       : S('.foundation-mq-small').css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, ''),
+      'small-only'  : S('.foundation-mq-small-only').css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, ''),
+      'medium'      : S('.foundation-mq-medium').css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, ''),
+      'medium-only' : S('.foundation-mq-medium-only').css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, ''),
+      'large'       : S('.foundation-mq-large').css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, ''),
+      'large-only'  : S('.foundation-mq-large-only').css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, ''),
+      'xlarge'      : S('.foundation-mq-xlarge').css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, ''),
+      'xlarge-only' : S('.foundation-mq-xlarge-only').css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, ''),
+      'xxlarge'     : S('.foundation-mq-xxlarge').css('font-family').replace(/^[\/\\'"]+|(;\s?})+|[\/\\'"]+$/g, '')
     },
 
     stylesheet : $('<style></style>').appendTo('head')[0].sheet,
 
-    global : {
-      namespace : undefined
+    global: {
+      namespace: undefined
     },
 
     init : function (scope, libraries, method, options, response) {
@@ -342,7 +323,7 @@
         }
       }
 
-      S(window).load(function () {
+      S(window).load(function(){
         S(window)
           .trigger('resize.fndtn.clearing')
           .trigger('resize.fndtn.dropdown')
@@ -364,7 +345,8 @@
         if (args && args.hasOwnProperty(lib)) {
             if (typeof this.libs[lib].settings !== 'undefined') {
               $.extend(true, this.libs[lib].settings, args[lib]);
-            } else if (typeof this.libs[lib].defaults !== 'undefined') {
+            }
+            else if (typeof this.libs[lib].defaults !== 'undefined') {
               $.extend(true, this.libs[lib].defaults, args[lib]);
             }
           return this.libs[lib].init.apply(this.libs[lib], [this.scope, args[lib]]);
@@ -399,7 +381,7 @@
       }
     },
 
-    set_namespace : function () {
+    set_namespace: function () {
 
       // Description:
       //    Don't bother reading the namespace out of the meta tag
@@ -487,16 +469,12 @@
           var context = this, args = arguments;
           var later = function () {
             timeout = null;
-            if (!immediate) {
-              result = func.apply(context, args);
-            }
+            if (!immediate) result = func.apply(context, args);
           };
           var callNow = immediate && !timeout;
           clearTimeout(timeout);
           timeout = setTimeout(later, delay);
-          if (callNow) {
-            result = func.apply(context, args);
-          }
+          if (callNow) result = func.apply(context, args);
           return result;
         };
       },
@@ -533,13 +511,11 @@
         ii = opts_arr.length;
 
         function isNumber (o) {
-          return !isNaN (o - 0) && o !== null && o !== '' && o !== false && o !== true;
+          return ! isNaN (o-0) && o !== null && o !== '' && o !== false && o !== true;
         }
 
         function trim (str) {
-          if (typeof str === 'string') {
-            return $.trim(str);
-          }
+          if (typeof str === 'string') return $.trim(str);
           return str;
         }
 
@@ -547,12 +523,8 @@
           p = opts_arr[ii].split(':');
           p = [p[0], p.slice(1).join(':')];
 
-          if (/true/i.test(p[1])) {
-            p[1] = true;
-          }
-          if (/false/i.test(p[1])) {
-            p[1] = false;
-          }
+          if (/true/i.test(p[1])) p[1] = true;
+          if (/false/i.test(p[1])) p[1] = false;
           if (isNumber(p[1])) {
             if (p[1].indexOf('.') === -1) {
               p[1] = parseInt(p[1], 10);
@@ -578,7 +550,7 @@
       //
       //    Class (String): Class name for the generated <meta> tag
       register_media : function (media, media_class) {
-        if (Foundation.media_queries[media] === undefined) {
+        if(Foundation.media_queries[media] === undefined) {
           $('head').append('<meta class="' + media_class + '"/>');
           Foundation.media_queries[media] = removeQuotes($('.' + media_class).css('font-family'));
         }
@@ -600,7 +572,7 @@
 
           if (query !== undefined) {
             Foundation.stylesheet.insertRule('@media ' +
-              Foundation.media_queries[media] + '{ ' + rule + ' }', Foundation.stylesheet.cssRules.length);
+              Foundation.media_queries[media] + '{ ' + rule + ' }');
           }
         }
       },
@@ -616,19 +588,7 @@
         var self = this,
             unloaded = images.length;
 
-        function pictures_has_height(images) {
-          var pictures_number = images.length;
-
-          for (var i = pictures_number - 1; i >= 0; i--) {
-            if(images.attr('height') === undefined) {
-              return false;
-            };
-          };
-
-          return true;
-        }
-
-        if (unloaded === 0 || pictures_has_height(images)) {
+        if (unloaded === 0) {
           callback(images);
         }
 
@@ -652,9 +612,7 @@
       // Returns:
       //    Rand (String): Pseudo-random, alphanumeric string.
       random_str : function () {
-        if (!this.fidx) {
-          this.fidx = 0;
-        }
+        if (!this.fidx) this.fidx = 0;
         this.prefix = this.prefix || [(this.name || 'F'), (+new Date).toString(36)].join('-');
 
         return this.prefix + (this.fidx++).toString(36);
