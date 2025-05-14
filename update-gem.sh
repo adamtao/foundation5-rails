@@ -1,6 +1,7 @@
 #! /bin/sh
 
 # clean old version
+rm -rf bower_components
 rm -rf vendor
 mkdir -p vendor/assets/javascripts/vendor vendor/assets/stylesheets
 
