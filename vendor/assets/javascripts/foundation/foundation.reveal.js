@@ -343,9 +343,9 @@
           this.locked = false;
         }
         if (animData.pop) {
-          css.top = $(window).scrollTop() - el.data('offset') + 'px';
+          css.top = $(root_element).scrollTop() - el.data('offset') + 'px';
           var end_css = {
-            top: $(window).scrollTop() + el.data('css-top') + 'px',
+            top: $(root_element).scrollTop() + el.data('css-top') + 'px',
             opacity: 1
           };
 
